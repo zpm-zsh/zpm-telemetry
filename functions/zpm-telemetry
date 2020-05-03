@@ -1,6 +1,23 @@
 #!/usr/bin/env zsh
 autoload -Uz _ZPM_get_plugin_name _ZPM_get_plugin_type _ZPM_get_plugin_basename _ZPM_get_plugin_path _ZPM_get_plugin_link _ZPM_get_plugin_hyperlink _ZPM_get_plugin_root_git_dir
 
+_zpm__telemetry_urlencode() (
+  # This is important to make sure string manipulation is handled
+  # byte-by-byte.
+  LC_ALL=C
+  str="$1"
+  while [ -n "$str" ]; do
+    safe="${str%%[!a-zA-Z0-9/:_\.\-\!\'\(\)~]*}"
+    printf "%s" "$safe"
+    str="${str#"$safe"}"
+    if [ -n "$str" ]; then
+      printf "%%%02X" "'$str"
+      str="${str#?}"
+    fi
+  done
+)
+
+
 local telemetry=''
 
 # Os 
@@ -45,8 +62,13 @@ for i in $_ZPM_plugins_full; do
     Plugin_async='false'
   fi
 
-  telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${i}|\n"
+  telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${i}|
+"
 
 done
 
-echo $telemetry | md
+telemetry_body_urlencoded=$(_zpm__telemetry_urlencode "$telemetry")
+telemetry_title_urlencoded=$(_zpm__telemetry_urlencode "Zpm telemetry")
+telemetry_label_urlencoded=$(_zpm__telemetry_urlencode "telemetry")
+
+xdg-open "https://github.com/zpm-zsh/zpm/issues/new?body=${telemetry_body_urlencoded}&title=${telemetry_title_urlencoded}&labels=${telemetry_label_urlencoded}"

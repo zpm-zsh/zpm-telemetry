@@ -31,13 +31,16 @@ telemetry+="
 
 "
 
+git_branch=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" symbolic-ref --short HEAD)
+git_commit=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" rev-parse HEAD)
+
 telemetry+="
 # Zpm info
 
 | Info | Value |
 |---|---|
-|Git branch| $(git symbolic-ref --short HEAD)|
-|Git commit| [$(git rev-parse HEAD)](https://github.com/zpm-zsh/zpm/commit/$(git rev-parse HEAD))|
+|Git branch|${git_branch}|
+|Git commit| [${git_commit}](https://github.com/zpm-zsh/zpm/commit/${git_commit})|
 
 "
 

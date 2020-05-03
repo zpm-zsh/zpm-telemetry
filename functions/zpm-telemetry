@@ -68,6 +68,10 @@ for i in $_ZPM_plugins_full; do
   telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${i}|
 "
 
+telemetry+='
+> Telemetry data was generated using [zpm-telemetry](https://github.com/zpm-zsh/zpm-telemetry) extension for [zpm](https://github.com/zpm-zsh/zpm)
+'
+
 done
 
 telemetry_body_urlencoded=$(_zpm__telemetry_urlencode "$telemetry")

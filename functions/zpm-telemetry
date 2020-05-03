@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 autoload -Uz _ZPM_get_plugin_name _ZPM_get_plugin_type _ZPM_get_plugin_basename _ZPM_get_plugin_path _ZPM_get_plugin_link _ZPM_get_plugin_hyperlink _ZPM_get_plugin_root_git_dir
 
-_zpm__telemetry_urlencode() (
+function _zpm__telemetry_urlencode() (
   # This is important to make sure string manipulation is handled
   # byte-by-byte.
   LC_ALL=C
@@ -20,14 +20,14 @@ _zpm__telemetry_urlencode() (
 
 local telemetry=''
 
-# Os 
+# Os
 telemetry+="
 # OS Info
 
 | Info | Value |
 |---|---|
-| OS | $(lsb_release -si -ri -ci) | 
-| zsh version | $(zsh --version) | 
+| OS | $(lsb_release -si -ri -ci) |
+| zsh version | $(zsh --version) |
 
 "
 
@@ -45,7 +45,7 @@ telemetry+="
 "
 
 telemetry+='
-# Plugins 
+# Plugins
 
 |Name|Type|Async|Full|
 |:--|:--|:--|:--|
@@ -58,14 +58,14 @@ for i in $_ZPM_plugins_full; do
   local Plugin_link=$(_ZPM_get_plugin_link "$Plugin_name" "$Plugin_type")
   local Plugin_hyperlink=$(_ZPM_get_plugin_hyperlink "$Plugin_name" "$Plugin_link")
   local Plugin_git_dir=$(_ZPM_get_plugin_root_git_dir "$Plugin_path" "$Plugin_type")
-  
+
   if [[ "$i" == *",async"* ]]; then
     Plugin_async='true'
   else
     Plugin_async='false'
   fi
 
-  telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${i}|
+telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${i}|
 "
 
 done

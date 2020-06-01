@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-autoload -Uz _ZPM_get_plugin_name _ZPM_get_plugin_type _ZPM_get_plugin_basename _ZPM_get_plugin_path _ZPM_get_plugin_link _ZPM_get_plugin_hyperlink _ZPM_get_plugin_root_git_dir
+autoload -Uz @zpm-get-plugin-name @zpm-get-plugin-type @zpm-get-plugin-basename @zpm-get-plugin-path @zpm-get-plugin-link @zpm-get-plugin-hyperlink @zpm-get-plugin-root-git-dir
 
 function _zpm__telemetry_urlencode() (
   # This is important to make sure string manipulation is handled
@@ -51,13 +51,13 @@ telemetry+='
 |:--|:--|:--|:--|
 '
 for i in $_ZPM_plugins_full; do
-  local Plugin_name=$(_ZPM_get_plugin_name "$i")
-  local Plugin_type=$(_ZPM_get_plugin_type "$i")
-  local Plugin_basename=$(_ZPM_get_plugin_basename "$Plugin_name")
-  local Plugin_path=$(_ZPM_get_plugin_path "$Plugin_name")
-  local Plugin_link=$(_ZPM_get_plugin_link "$Plugin_name" "$Plugin_type")
-  local Plugin_hyperlink=$(_ZPM_get_plugin_hyperlink "$Plugin_name" "$Plugin_link")
-  local Plugin_git_dir=$(_ZPM_get_plugin_root_git_dir "$Plugin_path" "$Plugin_type")
+  local Plugin_name=$(@zpm-get-plugin-name "$i")
+  local Plugin_type=$(@zpm-get-plugin-type "$i")
+  local Plugin_basename=$(@zpm-get-plugin-basename "$Plugin_name")
+  local Plugin_path=$(@zpm-get-plugin-path "$Plugin_name")
+  local Plugin_link=$(@zpm-get-plugin-link "$Plugin_name" "$Plugin_type")
+  local Plugin_hyperlink=$(@zpm-get-plugin-hyperlink "$Plugin_name" "$Plugin_link")
+  local Plugin_git_dir=$(@zpm-get-plugin-root-git-dir "$Plugin_path" "$Plugin_type")
 
   if [[ "$i" == *",async"* ]]; then
     Plugin_async='true'

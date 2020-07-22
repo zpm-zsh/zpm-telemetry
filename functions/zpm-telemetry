@@ -21,13 +21,16 @@ function _zpm__telemetry_urlencode() (
 local telemetry=''
 
 # Os
+os_version=$(lsb_release -si -ri -ci)
+zsh_version=$(zsh --version)
+
 telemetry+="
 # OS Info
 
-| Info | Value |
+|Info|Value|
 |---|---|
-| OS | $(lsb_release -si -ri -ci) |
-| zsh version | $(zsh --version) |
+|OS|${os_version}|
+|zsh version|${zsh_version}|
 
 "
 
@@ -37,17 +40,17 @@ git_commit=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" rev-pa
 telemetry+="
 # Zpm info
 
-| Info | Value |
+|Info|Value|
 |---|---|
-|Git branch|${git_branch}|
-|Git commit| [${git_commit}](https://github.com/zpm-zsh/zpm/commit/${git_commit})|
+|Git branch|[${git_branch}](https://github.com/zpm-zsh/zpm/tree/${git_branch})|
+|Git commit|[${git_commit}](https://github.com/zpm-zsh/zpm/commit/${git_commit})|
 
 "
 
 telemetry+='
 # Plugins
 
-|Name|Type|Async|Full|
+|Name|Type|Async|Options|
 |:--|:--|:--|:--|
 '
 for i in $_ZPM_plugins_full; do
@@ -65,7 +68,18 @@ for i in $_ZPM_plugins_full; do
     Plugin_async='false'
   fi
 
-telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${i}|
+  if [[ "$i" == *,* ]]; then
+     Plugin_option="${${${${i}//,type:(github|gitlab|bitbucket|mkdir|omz)}//,async}#*,}"
+  else
+    Plugin_option=""
+  fi
+
+
+  if [[ "${i%,*}" == "$Plugin_option" ]]; then
+    Plugin_option=""
+  fi
+
+telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${Plugin_option}|
 "
 
 done
@@ -79,4 +93,4 @@ telemetry_body_urlencoded=$(_zpm__telemetry_urlencode "$telemetry")
 telemetry_title_urlencoded=$(_zpm__telemetry_urlencode "Zpm telemetry")
 telemetry_label_urlencoded=$(_zpm__telemetry_urlencode "telemetry")
 
-xdg-open "https://github.com/zpm-zsh/zpm/issues/new?body=${telemetry_body_urlencoded}&title=${telemetry_title_urlencoded}&labels=${telemetry_label_urlencoded}"
+xdg-open "https://github.com/zpm-zsh/zpm-telemetry/issues/new?body=${telemetry_body_urlencoded}&title=${telemetry_title_urlencoded}&labels=${telemetry_label_urlencoded}"

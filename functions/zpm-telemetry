@@ -76,7 +76,7 @@ for i in $_ZPM_plugins_full; do
   fi
 
   if [[ "$i" == *,* ]]; then
-     Plugin_option="${${${${i}//,type:(github|gitlab|bitbucket|mkdir|omz)}//,async}#*,}"
+     Plugin_option="${${${${i}//,type:(github|gitlab|bitbucket|empty|omz)}//,async}#*,}"
   else
     Plugin_option=""
   fi

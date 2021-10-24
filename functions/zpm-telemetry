@@ -1,12 +1,13 @@
 #!/usr/bin/env zsh
+#
 autoload -Uz \
-  @zpm-get-plugin-name \
-  @zpm-get-plugin-type \
-  @zpm-get-plugin-basename \
-  @zpm-get-plugin-path \
-  @zpm-get-plugin-link \
+  @zpm-get-plugin-basename  \
   @zpm-get-plugin-hyperlink \
-  @zpm-get-plugin-git-root-path
+  @zpm-get-plugin-link      \
+  @zpm-get-plugin-name      \
+  @zpm-get-plugin-path      \
+  @zpm-get-plugin-type      \
+
 
 function _zpm__telemetry_urlencode() (
   # This is important to make sure string manipulation is handled
@@ -31,8 +32,12 @@ local telemetry=''
 os_version=$(lsb_release -si -ri -ci)
 zsh_version=$(zsh --version)
 
+git_branch=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" symbolic-ref --short HEAD)
+git_commit=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" rev-parse HEAD)
+
+
 telemetry+="
-# OS Info
+## OS Info
 
 |Info|Value|
 |---|---|
@@ -41,11 +46,8 @@ telemetry+="
 
 "
 
-git_branch=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" symbolic-ref --short HEAD)
-git_commit=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" rev-parse HEAD)
-
 telemetry+="
-# Zpm info
+## Zpm info
 
 |Info|Value|
 |---|---|
@@ -54,20 +56,20 @@ telemetry+="
 
 "
 
-telemetry+='
-# Plugins
+telemetry+="
+## Plugins
 
 |Name|Type|Async|Options|
 |:--|:--|:--|:--|
-'
+"
+
 for i in $_ZPM_plugins_full; do
   local Plugin_name=$(@zpm-get-plugin-name "$i")
-  local Plugin_type=$(@zpm-get-plugin-type "$i")
+  local Plugin_type=$(@zpm-get-plugin-type "$Plugin_name")
   local Plugin_basename=$(@zpm-get-plugin-basename "$Plugin_name")
   local Plugin_path=$(@zpm-get-plugin-path "$Plugin_name")
   local Plugin_link=$(@zpm-get-plugin-link "$Plugin_name" "$Plugin_type")
   local Plugin_hyperlink=$(@zpm-get-plugin-hyperlink "$Plugin_name" "$Plugin_link")
-  local Plugin_git_dir=$(@zpm-get-plugin-git-root-path "$Plugin_path" "$Plugin_type")
 
   if [[ "$i" == *",async"* ]]; then
     Plugin_async='true'
@@ -76,7 +78,7 @@ for i in $_ZPM_plugins_full; do
   fi
 
   if [[ "$i" == *,* ]]; then
-     Plugin_option="${${${${i}//,type:(github|gitlab|bitbucket|empty|omz)}//,async}#*,}"
+     Plugin_option="${${${i}//,async}#*,}"
   else
     Plugin_option=""
   fi
@@ -92,8 +94,7 @@ telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${P
 done
 
 telemetry+='
----
-> Telemetry data was generated using [zpm-telemetry](https://github.com/zpm-zsh/zpm-telemetry) extension for [zpm](https://github.com/zpm-zsh/zpm)
+> Telemetry data was generated using [zpm-telemetry](https://github.com/zpm-zsh/zpm-telemetry) extension for [zpm](https://github.com/zpm-zsh/zpm) 😊
 '
 
 telemetry_body_urlencoded=$(_zpm__telemetry_urlencode "$telemetry")

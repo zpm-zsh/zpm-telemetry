@@ -1,40 +1,47 @@
 #!/usr/bin/env zsh
-#
-autoload -Uz \
-  @zpm-get-plugin-basename  \
-  @zpm-get-plugin-hyperlink \
-  @zpm-get-plugin-link      \
-  @zpm-get-plugin-name      \
-  @zpm-get-plugin-path      \
-  @zpm-get-plugin-type      \
 
+autoload -Uz \
+  @zpm-get-plugin-basename                \
+  @zpm-get-plugin-documentation-hyperlink \
+  @zpm-get-plugin-documentation-link      \
+  @zpm-get-plugin-name                    \
+  @zpm-get-plugin-origin                  \
+  @zpm-get-plugin-origin-type             \
+  @zpm-get-plugin-path                    \
+  @zpm-get-plugin-type
 
 function _zpm__telemetry_urlencode() (
-  # This is important to make sure string manipulation is handled
-  # byte-by-byte.
   LC_ALL=C
-  str="$1"
-  while [ -n "$str" ]; do
-    safe="${str%%[!a-zA-Z0-9/:_\.\-\!\'\(\)~]*}"
+  local str="$1"
+  while [[ -n "$str" ]]; do
+    local safe="${str%%[!a-zA-Z0-9/:_\.\-\!\'\(\)~]*}"
     printf "%s" "$safe"
     str="${str#"$safe"}"
-    if [ -n "$str" ]; then
+    if [[ -n "$str" ]]; then
       printf "%%%02X" "'$str"
       str="${str#?}"
     fi
   done
 )
 
-
 local telemetry=''
 
-# Os
-os_version=$(lsb_release -si -ri -ci)
-zsh_version=$(zsh --version)
+# OS detection
+local os_version
+if (( $+commands[lsb_release] )); then
+  os_version=$(lsb_release -si -ri -ci 2>/dev/null)
+elif [[ -f /etc/os-release ]]; then
+  os_version="$(grep -E '^PRETTY_NAME=' /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '\"')"
+fi
+[[ -z "$os_version" ]] && os_version="$(uname -srm)"
 
-git_branch=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" symbolic-ref --short HEAD)
-git_commit=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" rev-parse HEAD)
+local zsh_ver="${ZSH_VERSION:-$(zsh --version 2>/dev/null)}"
 
+local git_branch="" git_commit=""
+if [[ -d "${_ZPM_DIR}/.git" ]]; then
+  git_branch=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" symbolic-ref --short HEAD 2>/dev/null || echo "main")
+  git_commit=$(git --git-dir="${_ZPM_DIR}/.git/" --work-tree="${_ZPM_DIR}/" rev-parse --short HEAD 2>/dev/null)
+fi
 
 telemetry+="
 ## OS Info
@@ -42,12 +49,12 @@ telemetry+="
 |Info|Value|
 |---|---|
 |OS|${os_version}|
-|zsh version|${zsh_version}|
+|zsh version|${zsh_ver}|
 
 "
 
 telemetry+="
-## Zpm info
+## ZPM Info
 
 |Info|Value|
 |---|---|
@@ -63,42 +70,45 @@ telemetry+="
 |:--|:--|:--|:--|
 "
 
-for i in $_ZPM_plugins_full; do
-  local Plugin_name=$(@zpm-get-plugin-name "$i")
-  local Plugin_type=$(@zpm-get-plugin-type "$Plugin_name")
-  local Plugin_basename=$(@zpm-get-plugin-basename "$Plugin_name")
-  local Plugin_path=$(@zpm-get-plugin-path "$Plugin_name")
-  local Plugin_link=$(@zpm-get-plugin-link "$Plugin_name" "$Plugin_type")
-  local Plugin_hyperlink=$(@zpm-get-plugin-hyperlink "$Plugin_name" "$Plugin_link")
+for key in ${(k)_ZPM_plugins_full}; do
+  local spec="${_ZPM_plugins_full[$key]}"
+  local Plugin_name="$(@zpm-get-plugin-name "$spec")"
+  local Plugin_type="$(@zpm-get-plugin-type "$Plugin_name")"
+  local Plugin_basename="$(@zpm-get-plugin-basename "$Plugin_name")"
+  local Plugin_origin_type="$(@zpm-get-plugin-origin-type "$Plugin_name")"
+  local Plugin_origin="$(@zpm-get-plugin-origin "$spec" "$Plugin_name" "$Plugin_basename" "$Plugin_type" "$Plugin_origin_type")"
+  local Plugin_link="$(@zpm-get-plugin-documentation-link "$Plugin_name" "$Plugin_type" "$Plugin_origin")"
 
-  if [[ "$i" == *",async"* ]]; then
-    Plugin_async='true'
-  else
-    Plugin_async='false'
+  local Plugin_async="false"
+  [[ "$spec" == *",async"* ]] && Plugin_async="true"
+
+  local Plugin_option=""
+  if [[ "$spec" == *,* ]]; then
+    Plugin_option="${spec#*,}"
+    Plugin_option="${Plugin_option//,async/}"
+    Plugin_option="${Plugin_option//async,/}"
+    Plugin_option="${Plugin_option//async/}"
   fi
 
-  if [[ "$i" == *,* ]]; then
-     Plugin_option="${${${i}//,async}#*,}"
-  else
-    Plugin_option=""
-  fi
-
-
-  if [[ "${i%,*}" == "$Plugin_option" ]]; then
-    Plugin_option=""
-  fi
-
-telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${Plugin_option}|
+  telemetry+="|[${Plugin_name}](${Plugin_link})|${Plugin_type}|${Plugin_async}|${Plugin_option}|
 "
-
 done
 
 telemetry+='
-> Telemetry data was generated using [zpm-telemetry](https://github.com/zpm-zsh/zpm-telemetry) extension for [zpm](https://github.com/zpm-zsh/zpm) 😊
+> Telemetry data generated with [zpm-telemetry](https://github.com/zpm-zsh/zpm-telemetry) for [zpm](https://github.com/zpm-zsh/zpm) 😊
 '
 
-telemetry_body_urlencoded=$(_zpm__telemetry_urlencode "$telemetry")
-telemetry_title_urlencoded=$(_zpm__telemetry_urlencode "Zpm telemetry")
-telemetry_label_urlencoded=$(_zpm__telemetry_urlencode "telemetry")
+local telemetry_body_urlencoded=$(_zpm__telemetry_urlencode "$telemetry")
+local telemetry_title_urlencoded=$(_zpm__telemetry_urlencode "ZPM telemetry report")
+local telemetry_label_urlencoded=$(_zpm__telemetry_urlencode "telemetry")
 
-xdg-open "https://github.com/zpm-zsh/zpm-telemetry/issues/new?body=${telemetry_body_urlencoded}&title=${telemetry_title_urlencoded}&labels=${telemetry_label_urlencoded}"
+local target_url="https://github.com/zpm-zsh/zpm-telemetry/issues/new?body=${telemetry_body_urlencoded}&title=${telemetry_title_urlencoded}&labels=${telemetry_label_urlencoded}"
+
+if (( $+commands[xdg-open] )); then
+  xdg-open "$target_url" 2>/dev/null
+elif (( $+commands[open] )); then
+  open "$target_url" 2>/dev/null
+else
+  print "Telemetry URL:"
+  print "$target_url"
+fi
